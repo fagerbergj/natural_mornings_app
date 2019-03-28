@@ -3,7 +3,7 @@ package com.example.jasonfagerberg.naturalmornings
 class Day (
         val name: String,
         var isEnabled: Boolean = true,
-        var time: Double? = -1.0,
+        var time: Int = 480,
         var lightActivated: Boolean = true,
         var playSound: Boolean = true,
         var openBlinds: Boolean = true,
