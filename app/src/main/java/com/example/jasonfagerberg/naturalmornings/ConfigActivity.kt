@@ -1,6 +1,7 @@
 package com.example.jasonfagerberg.naturalmornings
 
-import android.bluetooth.BluetoothSocket
+import android.bluetooth.*
+import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
@@ -9,12 +10,54 @@ import android.widget.Button
 import android.widget.Toast
 import org.json.JSONObject
 import java.io.*
+import java.util.*
 
 class ConfigActivity : AppCompatActivity() {
-    lateinit var configFilePath: String
+    private lateinit var configFilePath: String
+    var bluetoothHeadset: BluetoothHeadset? = null
+    private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
+    private var pi : BluetoothDevice? = null
+
+    private val profileListener = object : BluetoothProfile.ServiceListener {
+
+        override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
+            if (profile == BluetoothProfile.HEADSET) {
+                bluetoothHeadset = proxy as BluetoothHeadset
+            }
+        }
+
+        override fun onServiceDisconnected(profile: Int) {
+            if (profile == BluetoothProfile.HEADSET) {
+                bluetoothHeadset = null
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Establish connection to the proxy.
+        bluetoothAdapter?.getProfileProxy(applicationContext, profileListener, BluetoothProfile.HEADSET)
+
+        val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
+        if (bluetoothAdapter == null) {
+            // Device doesn't support Bluetooth
+        }
+
+        if (bluetoothAdapter?.isEnabled == false) {
+            // val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            // startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+        }
+
+        val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
+        pairedDevices?.forEach { device ->
+            val deviceName = device.name
+            val deviceHardwareAddress = device.address // MAC address
+            if (deviceHardwareAddress == "B8:27:EB:0C:74:60") {
+                pi = device
+            }
+        }
+
         configFilePath = filesDir.absolutePath +  "/config/config.json"
         setContentView(R.layout.activity_config)
         createDay(R.id.monday, "Monday", 0)
@@ -37,14 +80,20 @@ class ConfigActivity : AppCompatActivity() {
                 output.write(createJSONString())
                 output.close()
                 // todo jefferey, send file created here to raspberry pi
-                val bluetoothService = BluetoothService(Handler())
-                bluetoothService.write(createJSONString().toByteArray())
+                val thread = ConnectedThread(pi!!.createRfcommSocketToServiceRecord(UUID.randomUUID()))
+                thread.write(createJSONString().toByteArray())
                 Toast.makeText(applicationContext, "Config saved", Toast.LENGTH_LONG).show()
 
             } catch (e: Exception) {
                 Log.e("ConfigActivity", e.message)
             }
         }
+    }
+
+    override fun onDestroy() {
+        // Close proxy connection after use.
+        bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HEADSET, bluetoothHeadset)
+        super.onDestroy()
     }
 
     private fun createDay(frameId: Int, dayName: String, dayInt: Int) {
@@ -99,60 +148,52 @@ class ConfigActivity : AppCompatActivity() {
 }
 
 private const val TAG = "MY_APP_DEBUG_TAG"
+private class ConnectedThread(private val mmSocket: BluetoothSocket) : Thread() {
 
-const val MESSAGE_READ: Int = 0
-const val MESSAGE_WRITE: Int = 1
-const val MESSAGE_TOAST: Int = 2
+    private val mmInStream: InputStream = mmSocket.inputStream
+    private val mmOutStream: OutputStream = mmSocket.outputStream
+    private val mmBuffer: ByteArray = ByteArray(1024)
 
-class BluetoothService(private val handler: Handler) {
+    override fun run() {
+        var numBytes: Int
 
-    private inner class ConnectedThread(private val mmSocket: BluetoothSocket) : Thread() {
-
-        private val mmInStream: InputStream = mmSocket.inputStream
-        private val mmOutStream: OutputStream = mmSocket.outputStream
-        private val mmBuffer: ByteArray = ByteArray(1024)
-
-        override fun run() {
-            var numBytes: Int
-
-            while(true) {
-                numBytes = try{
-                    mmInStream.read(mmBuffer)
-                } catch (e: IOException){
-                    Log.d(TAG, "Input stream was disconnected", e)
-                    break
-                }
-
-                val readMsg = handler.obtainMessage(MESSAGE_READ, numBytes, -1, mmBuffer)
-                readMsg.sendToTarget()
+        while(true) {
+            numBytes = try{
+                mmInStream.read(mmBuffer)
+            } catch (e: IOException){
+                Log.d(TAG, "Input stream was disconnected", e)
+                break
             }
+
+//            val readMsg = handler.obtainMessage(MESSAGE_READ, numBytes, -1, mmBuffer)
+//            readMsg.sendToTarget()
+        }
+    }
+
+    fun write(bytes: ByteArray){
+        try{
+            mmOutStream.write(bytes)
+        } catch (e: IOException) {
+            Log.e(TAG, "Error occurred when sending data", e)
+
+//                val writeErrorMsg = handler.obtainMessage(MESSAGE_TOAST)
+//            val bundle = Bundle().apply {
+//                putString("toast", "Couldn't send data to the other device")
+//            }
+//                writeErrorMsg.data = bundle
+//                handler.sendMessage(writeErrorMsg)
+            return
         }
 
-        fun write(bytes: ByteArray){
-            try{
-                mmOutStream.write(bytes)
-            } catch (e: IOException) {
-                Log.e(TAG, "Error occurred when sending data", e)
+//        val writtenMsg = handler.obtainMessage(MESSAGE_WRITE, -1, -1, mmBuffer)
+//        writtenMsg.sendToTarget()
+    }
 
-                val writeErrorMsg = handler.obtainMessage(MESSAGE_TOAST)
-                val bundle = Bundle().apply {
-                    putString("toast", "Couldn't send data to the other device")
-                }
-                writeErrorMsg.data = bundle
-                handler.sendMessage(writeErrorMsg)
-                return
-            }
-
-            val writtenMsg = handler.obtainMessage(MESSAGE_WRITE, -1, -1, mmBuffer)
-            writtenMsg.sendToTarget()
-        }
-
-        fun cancel() {
-            try {
-                mmSocket.close()
-            } catch (e: IOException) {
-                Log.e(TAG, "Could not close the connect socket", e)
-            }
+    fun cancel() {
+        try {
+            mmSocket.close()
+        } catch (e: IOException) {
+            Log.e(TAG, "Could not close the connect socket", e)
         }
     }
 }
