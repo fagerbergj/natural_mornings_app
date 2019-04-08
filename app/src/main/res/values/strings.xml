@@ -1,7 +1,23 @@
 <resources>
-    <string name="app_name">Natura lMornings</string>
-
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-
+    <string name="app_name">Natural Mornings</string>
+    <string name="light_activated">Light Activated</string>
+    <string name="open_blinds">Open Blinds</string>
+    <string name="open_window">Open Window</string>
+    <string name="play_sound">Play Sound</string>
+    <string name="disconnected">It looks like your phone is not connected the Natural Mornings alarm clock.
+        Please use bluetooth to pair your phone with the alarm clock</string>
+    <string name="connect">Connect</string>
+    <string name="wake_up_naturally">You will be woken up naturally</string>
+    <string name="save_config">Save Config</string>
+    <string name="monday">Monday</string>
+    <string name="tuesday">Tuesday</string>
+    <string name="wednesday">Wednesday</string>
+    <string name="thursday">Thursday</string>
+    <string name="friday">Friday</string>
+    <string name="saturday">Saturday</string>
+    <string name="sunday">Sunday</string>
+    <string name="select_wakeup_time">Select Wakeup Time</string>
+    <string name="add_day">Add Day</string>
+    <string name="add">Add</string>
+    <string name="cancel">Cancel</string>
 </resources>

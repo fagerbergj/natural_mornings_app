@@ -12,14 +12,14 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
-        <activity android:name=".ConfigActivity">
+        android:theme="@style/ConfigTheme">
+        <activity android:name=".config.ConfigActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ConnectActivity"></activity>
+        <activity android:name=".connect.ConnectActivity"></activity>
     </application>
 
 </manifest>

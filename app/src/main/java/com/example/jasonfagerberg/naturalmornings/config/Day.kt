@@ -1,8 +1,7 @@
-package com.example.jasonfagerberg.naturalmornings
+package com.example.jasonfagerberg.naturalmornings.config
 
 class Day (
-        val name: String,
-        var isEnabled: Boolean = true,
+        var isEnabled: Boolean = false,
         var time: Int = 480,
         var lightActivated: Boolean = true,
         var playSound: Boolean = true,
@@ -10,8 +9,7 @@ class Day (
         var openWindow: Boolean = true
 ) {
     override fun toString(): String {
-        return "\t\t{" +
-                "\n\t\t\t\"name\":\"$name\"," +
+        return "{" +
                 "\n\t\t\t\"isEnabled\":$isEnabled, " +
                 "\n\t\t\t\"time\":$time, " +
                 "\n\t\t\t\"lightActivated\":$lightActivated, " +
